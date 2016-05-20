@@ -8,6 +8,9 @@ Meteor.Paypal = {
   purchase: function(card_info, payment_info, callback){
     Meteor.call('paypal_submit', 'sale', card_info, payment_info, callback);
   },
+  capture: function(authorization_id, currency, amount, is_final_capture, callback){
+    Meteor.call('paypal_capture', authorization_id, currency, amount, is_final_capture, callback);
+  },
   //config is for the paypal configuration settings.
   config: function(options){
     this.account_options = options;
@@ -39,6 +42,14 @@ Meteor.Paypal = {
         expire_year: data.expire_year
       }};
   },
+  capture_payment_json: function(currency, amount, isFinalCapture){                                                                    // 15
+    return {
+      "amount": {
+        "currency": currency,
+        "total": amount},
+      "is_final_capture": isFinalCapture
+    };
+  },
   //parsePaymentData splits up the card data and gets it into a paypal friendly format.
   parsePaymentData: function(data){
     return {amount: {total: data.total, currency: data.currency}};
@@ -67,17 +78,37 @@ if(Meteor.isServer){
         var fut = new Future();
         this.unblock();
         paypal_sdk.payment.create(payment_json, Meteor.bindEnvironment(function(err, payment){
-          if (err){
-            fut.return({saved: false, error: err});
-          } else {
-            fut.return({saved: true, payment: payment});
-          }
-        },
-        function(e){
-          console.error(e);
-        }));
+              if (err){
+                fut.return({saved: false, error: err});
+              } else {
+                fut.return({saved: true, payment: payment});
+              }
+            },
+            function(e){
+              console.error(e);
+            }));
         return fut.wait();
-    }});
+      },
+      paypal_capture: function(authorization_id, currency, amount, isFinalCapture){
+        paypal_sdk.configure(Meteor.Paypal.account_options);
+        var fut = new Future();
+        this.unblock();
+        var capture_payment_json = Meteor.Paypal.capture_payment_json(currency, amount, isFinalCapture);
+        paypal_sdk.authorization.capture(authorization_id, capture_payment_json, Meteor.bindEnvironment(function(err, payment){
+              if (err){
+                fut.return({saved: false, error: err});
+              } else {
+                fut.return({saved: true, payment: payment});
+              }
+            },
+            function(e){
+              console.error(e);
+            }));
+
+        return fut.wait();
+
+      }
+    });
     // this is not a method because it should really only be
     // called by server-side code
     Meteor.Paypal.execute = function execute(payment_id, payer_id, callback) {

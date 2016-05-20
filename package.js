@@ -1,8 +1,8 @@
 Package.describe({
 	summary: "A paypal package that helps make restful API calls to Paypal",
 	version: "1.0.1",
-	name: "limemakers:paypal",
-	git: "https://github.com/LimeMakers/meteor-paypal.git"
+	name: "skibummm:paypal",
+	git: "git@github.com:john-kuo/meteor-paypal.git"
 });
 
 Npm.depends({
@@ -11,7 +11,6 @@ Npm.depends({
 
 Package.on_use(function(api) {
 	api.add_files("paypal.js", ["client", "server"]);
-	api.add_files(["paypal_credit_card_form.html", "paypal_credit_card_form.js"], "client");
 	api.export("Paypal", ["client", "server"]);
 });
 
